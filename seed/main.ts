@@ -1,20 +1,49 @@
 import { prisma } from "../lib/prisma"
+import bcrypt from "bcrypt"
 
 async function main() {
+    console.log("User seeding started...")
+    await prisma.user.createMany({
+        data: [
+            {
+                name: "Thurein",
+                email: "thurein@gmail.com",
+                username: "thurein",
+                password: await bcrypt.hash("thurein", 10),
+            },
+            {
+                name: "Thant",
+                email: "thant@gmail.com",
+                username: "thant",
+                password: await bcrypt.hash("thant", 10),
+            },
+        ],
+    })
+
+    console.log("User seeding done. \n")
+
     console.log("Exercise seeding started...")
     await prisma.exercise.createMany({
         data: [
             {
                 name: "Chest Press",
                 muscleGroup: "Chest",
+                userId: 1,
             },
             {
                 name: "Incline Chest Press",
                 muscleGroup: "Chest",
+                userId: 1,
             },
             {
                 name: "Lat Pull Down",
                 muscleGroup: "Back",
+                userId: 2,
+            },
+            {
+                name: "Lat Pull Down",
+                muscleGroup: "Back",
+                userId: 1,
             },
         ],
     })
@@ -26,10 +55,12 @@ async function main() {
         data: [
             {
                 sessionType: "Push",
+                userId: 1,
             },
             {
                 sessionType: "Pull",
                 note: "Did tricep curl",
+                userId: 2,
             },
         ],
     })

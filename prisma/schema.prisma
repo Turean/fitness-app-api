@@ -12,11 +12,26 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id        Int        @id @default(autoincrement())
+  name      String
+  email     String     @unique
+  password  String
+  username  String     @unique
+  createdAt DateTime   @default(now())
+  sessions  Session[]
+  exercises Exercise[]
+}
+
 model Exercise {
   id               Int               @id @default(autoincrement())
-  name             String            @unique
+  name             String
   muscleGroup      String
+  userId           Int
+  user             User              @relation(fields: [userId], references: [id])
   workoutExercises WorkoutExercise[]
+
+  @@unique([name, userId])
 }
 
 model Session {
@@ -24,6 +39,8 @@ model Session {
   sessionType      String
   note             String?
   date             DateTime          @default(now())
+  userId           Int
+  user             User              @relation(fields: [userId], references: [id])
   workoutExercises WorkoutExercise[]
 }
 
