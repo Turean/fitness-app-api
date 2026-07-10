@@ -13,6 +13,9 @@ app.use(exercisesRouter)
 import { router as usersRouter } from "./routes/users"
 app.use(usersRouter)
 
+import { router as loginRouter } from "./routes/login"
+app.use(loginRouter)
+
 app.get("/", (req, res) => {
     res.json({ status: "Fitness app API running..." })
 })

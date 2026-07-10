@@ -12,6 +12,15 @@ router.get("/users", async (req, res) => {
     res.json(users)
 })
 
+router.get("/users/:id", async (req, res) => {
+    const id = req.params?.id
+    const user = await prisma.user.findUnique({
+        where: { id: Number(id) },
+    })
+
+    res.json(user)
+})
+
 router.post("/users", async (req, res) => {
     const name = req.body?.name
     const username = req.body?.username
