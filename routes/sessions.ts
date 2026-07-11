@@ -1,5 +1,6 @@
 import express from "express"
 import { prisma } from "../lib/prisma"
+import { auth } from "../middlewares/auth"
 
 export const router = express.Router()
 
@@ -26,4 +27,22 @@ router.get("/sessions/:id", async (req, res) => {
         },
     })
     res.json(session)
+})
+
+router.post("/sessions", auth, async (req, res) => {
+    const sessionType = req.body?.sessionType
+    const note = req.body?.note
+    const userId = res.locals.user.id
+
+    if (!sessionType) {
+        return res.status(400).json({ msg: "Session type is required" })
+    }
+    const session = await prisma.session.create({
+        data: {
+            sessionType,
+            note,
+            userId,
+        },
+    })
+    res.status(201).json(session)
 })
