@@ -15,7 +15,7 @@ export function auth(
             res.locals.user = data
             return next()
         } catch (e) {
-            res.status(403).json({ msg: "invalid token" })
+            return res.status(403).json({ msg: "invalid token" })
         }
     }
     res.status(403).json({ msg: "missing token" })

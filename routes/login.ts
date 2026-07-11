@@ -20,7 +20,7 @@ router.post("/login", async (req, res) => {
     const password = req.body?.password
 
     if (!username || !password) {
-        res.status(400).json({ msg: "username and password required" })
+        return res.status(400).json({ msg: "username and password required" })
     }
 
     const user = await prisma.user.findUnique({
