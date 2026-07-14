@@ -39,7 +39,7 @@ router.post("/exercises", auth, async (req, res) => {
 
     const exercise = await prisma.exercise.create({
         data: {
-            name,
+            name: name.toUpperCase(),
             muscleGroup,
             userId,
         },

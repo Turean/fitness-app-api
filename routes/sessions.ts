@@ -39,7 +39,7 @@ router.post("/sessions", auth, async (req, res) => {
     }
     const session = await prisma.session.create({
         data: {
-            sessionType,
+            sessionType: sessionType.toUpperCase(),
             note,
             userId,
         },
