@@ -4,12 +4,14 @@ import { auth } from "../middlewares/auth"
 
 export const router = express.Router()
 
-router.get("/sessions", async (req, res) => {
+router.get("/sessions", auth, async (req, res) => {
+    const userId = res.locals.user.id
     const sessions = await prisma.session.findMany({
+        where: { userId },
         orderBy: { id: "desc" },
         include: {
             workoutExercises: {
-                include: { exercise: true },
+                include: { exercise: true, sets: true },
             },
         },
     })
