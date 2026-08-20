@@ -9,26 +9,26 @@ router.get("/sessions", auth, async (req, res) => {
     const sessions = await prisma.session.findMany({
         where: { userId },
         orderBy: { id: "desc" },
+    })
+    res.json(sessions)
+})
+
+router.get("/sessions/:id", auth, async (req, res) => {
+    const id = req.params?.id
+    const userId = res.locals.user.id
+    const session = await prisma.session.findFirst({
+        where: { id: Number(id), userId },
         include: {
             workoutExercises: {
                 include: { exercise: true, sets: true },
             },
         },
     })
-    res.json(sessions)
-})
+    if (session) {
+        return res.json(session)
+    }
 
-router.get("/sessions/:id", async (req, res) => {
-    const id = req.params?.id
-    const session = await prisma.session.findUnique({
-        where: { id: Number(id) },
-        include: {
-            workoutExercises: {
-                include: { exercise: true },
-            },
-        },
-    })
-    res.json(session)
+    res.status(404).json({ msg: "session not found" })
 })
 
 router.post("/sessions", auth, async (req, res) => {

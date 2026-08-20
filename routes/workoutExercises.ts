@@ -39,5 +39,5 @@ router.post("/sessions/:sessionId/workoutExercises", auth, async (req, res) => {
                 .json({ msg: "failed to create workout exercise" })
         }
     }
-    res.status(403).json({ msg: "invalid session" })
+    res.status(404).json({ msg: "session not found" })
 })
