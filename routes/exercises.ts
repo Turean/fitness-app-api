@@ -13,21 +13,6 @@ router.get("/exercises", auth, async (req, res) => {
     res.json(exercises)
 })
 
-router.get("/exercises/:id", async (req, res) => {
-    const id = req.params?.id
-    const exercise = await prisma.exercise.findUnique({
-        where: { id: Number(id) },
-        include: {
-            user: true,
-            workoutExercises: {
-                include: { session: true },
-            },
-        },
-    })
-
-    res.json(exercise)
-})
-
 router.post("/exercises", auth, async (req, res) => {
     const name = req.body?.name
     const muscleGroup = req.body?.muscleGroup
