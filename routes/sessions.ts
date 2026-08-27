@@ -48,3 +48,23 @@ router.post("/sessions", auth, async (req, res) => {
     })
     res.status(201).json(session)
 })
+
+router.delete("/sessions/:id", auth, async (req, res) => {
+    const id = req.params?.id
+    const userId = res.locals.user.id
+    const session = await prisma.session.findFirst({
+        where: { id: Number(id), userId },
+    })
+
+    if (session) {
+        try {
+            const deleteSession = await prisma.session.delete({
+                where: { id: session.id },
+            })
+            return res.status(200).json(deleteSession)
+        } catch (e) {
+            return res.status(400).json({ msg: "failed to delete the session" })
+        }
+    }
+    res.status(404).json({ msg: "session not found" })
+})
