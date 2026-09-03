@@ -32,3 +32,34 @@ router.post("/exercises", auth, async (req, res) => {
 
     res.status(201).json(exercise)
 })
+
+router.delete("/exercises/:id", auth, async (req, res) => {
+    const id = req.params?.id
+    const userId = res.locals.user.id
+    const exercise = await prisma.exercise.findFirst({
+        where: { id: Number(id), userId },
+    })
+
+    if (exercise) {
+        const workoutExercise = await prisma.workoutExercise.findFirst({
+            where: { exerciseId: exercise.id },
+        })
+
+        try {
+            if (!workoutExercise) {
+                const deleteExercise = await prisma.exercise.delete({
+                    where: { id: exercise.id },
+                })
+                return res.status(200).json(deleteExercise)
+            }
+            return res.status(400).json({
+                msg: "cannot delete an exercise with workout history",
+            })
+        } catch (e) {
+            return res
+                .status(400)
+                .json({ msg: "failed to delete the exercise" })
+        }
+    }
+    res.status(404).json({ msg: "exercise not found" })
+})
