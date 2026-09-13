@@ -17,6 +17,18 @@ async function main() {
                 username: "thant",
                 password: await bcrypt.hash("thant", 10),
             },
+            {
+                name: "Turean",
+                email: "turean@gmail.com",
+                username: "turean",
+                password: await bcrypt.hash("turean", 10),
+            },
+            {
+                name: "Tant",
+                email: "tant@gmail.com",
+                username: "tant",
+                password: await bcrypt.hash("tant", 10),
+            },
         ],
     })
 
@@ -26,24 +38,49 @@ async function main() {
     await prisma.exercise.createMany({
         data: [
             {
-                name: "Chest Press",
+                name: "CHEST PRESS",
                 muscleGroup: "Chest",
                 userId: 1,
             },
             {
-                name: "Incline Chest Press",
+                name: "INCLINE CHEST PRESS",
                 muscleGroup: "Chest",
                 userId: 1,
             },
             {
-                name: "Lat Pull Down",
+                name: "LAT PULL DOWN",
                 muscleGroup: "Back",
                 userId: 2,
             },
             {
-                name: "Lat Pull Down",
+                name: "LAT PULL DOWN",
                 muscleGroup: "Back",
                 userId: 1,
+            },
+            {
+                name: "SQUAT",
+                muscleGroup: "Legs",
+                userId: 1,
+            },
+            {
+                name: "LEG PRESS",
+                muscleGroup: "Legs",
+                userId: 2,
+            },
+            {
+                name: "SHOULDER PRESS",
+                muscleGroup: "Shoulders",
+                userId: 1,
+            },
+            {
+                name: "CHEST PRESS",
+                muscleGroup: "Chest",
+                userId: 3,
+            },
+            {
+                name: "DEADLIFT",
+                muscleGroup: "Legs",
+                userId: 3,
             },
         ],
     })
@@ -54,13 +91,26 @@ async function main() {
     await prisma.session.createMany({
         data: [
             {
-                sessionType: "Push",
+                sessionType: "PUSH",
                 userId: 1,
             },
             {
-                sessionType: "Pull",
+                sessionType: "PULL",
                 note: "Did tricep curl",
                 userId: 2,
+            },
+            {
+                sessionType: "LEGS",
+                userId: 1,
+            },
+            {
+                sessionType: "LEGS",
+                userId: 2,
+            },
+            {
+                sessionType: "PUSH",
+                note: "First session",
+                userId: 3,
             },
         ],
     })
@@ -77,6 +127,18 @@ async function main() {
             {
                 sessionId: 2,
                 exerciseId: 3,
+            },
+            {
+                sessionId: 3,
+                exerciseId: 5,
+            },
+            {
+                sessionId: 4,
+                exerciseId: 6,
+            },
+            {
+                sessionId: 5,
+                exerciseId: 8,
             },
         ],
     })
@@ -122,6 +184,63 @@ async function main() {
                 reps: 8,
                 weight: 27,
                 workoutExerciseId: 2,
+            },
+
+            {
+                setNumber: 1,
+                reps: 12,
+                weight: 40,
+                workoutExerciseId: 3,
+            },
+            {
+                setNumber: 2,
+                reps: 10,
+                weight: 45,
+                workoutExerciseId: 3,
+            },
+            {
+                setNumber: 3,
+                reps: 8,
+                weight: 50,
+                workoutExerciseId: 3,
+            },
+
+            {
+                setNumber: 1,
+                reps: 12,
+                weight: 60,
+                workoutExerciseId: 4,
+            },
+            {
+                setNumber: 2,
+                reps: 12,
+                weight: 65,
+                workoutExerciseId: 4,
+            },
+            {
+                setNumber: 3,
+                reps: 10,
+                weight: 70,
+                workoutExerciseId: 4,
+            },
+
+            {
+                setNumber: 1,
+                reps: 15,
+                weight: 20,
+                workoutExerciseId: 5,
+            },
+            {
+                setNumber: 2,
+                reps: 12,
+                weight: 22,
+                workoutExerciseId: 5,
+            },
+            {
+                setNumber: 3,
+                reps: 10,
+                weight: 25,
+                workoutExerciseId: 5,
             },
         ],
     })
