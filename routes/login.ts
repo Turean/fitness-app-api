@@ -10,6 +10,7 @@ router.get("/verify", auth, async (req, res) => {
     const id = res.locals.user.id
     const user = await prisma.user.findUnique({
         where: { id },
+        omit: { password: true },
     })
 
     res.json(user)
@@ -34,8 +35,10 @@ router.post("/login", async (req, res) => {
                 process.env.JWT_SECRET as string,
             )
 
-            return res.json({ user, token })
+            const { password, ...safeUser } = user
+            return res.json({ user: safeUser, token })
         }
+        return res.status(401).json({ msg: "invalid password" })
     }
-    return res.status(401).json({ msg: "invalid username or password" })
+    return res.status(401).json({ msg: "invalid username" })
 })
