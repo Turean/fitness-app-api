@@ -35,7 +35,7 @@ router.post("/login", async (req, res) => {
                 process.env.JWT_SECRET as string,
             )
 
-            const { password, ...safeUser } = user
+            const { password: _password, ...safeUser } = user
             return res.json({ user: safeUser, token })
         }
         return res.status(401).json({ msg: "invalid password" })
