@@ -36,7 +36,7 @@ router.post("/login", async (req, res) => {
             )
 
             const { password: _password, ...safeUser } = user
-            return res.json({ user: safeUser, token })
+            return res.json({ safeUser, token })
         }
         return res.status(401).json({ msg: "invalid password" })
     }

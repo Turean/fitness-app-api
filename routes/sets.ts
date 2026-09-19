@@ -1,6 +1,7 @@
 import express from "express"
 import { prisma } from "../lib/prisma"
 import { auth } from "../middlewares/auth"
+import { isNonNegativeInt, isPositiveInt } from "../lib/validate"
 
 export const router = express.Router()
 
@@ -26,7 +27,54 @@ router.get(
             return res.json(workoutExercise.sets)
         }
 
-        res.status(404).json({ error: "Workout exercise not found" })
+        res.status(404).json({ msg: "workout exercise not found" })
+    },
+)
+
+router.post(
+    "/workoutExercises/:workoutExerciseId/sets",
+    auth,
+    async (req, res) => {
+        const workoutExerciseId = Number(req.params?.workoutExerciseId)
+        const reps = req.body?.reps
+        const weight = req.body?.weight
+
+        if (!isPositiveInt(reps) || !isNonNegativeInt(weight)) {
+            return res.status(400).json({
+                msg: "reps (1 or more) and weight (0 or more) required",
+            })
+        }
+
+        const workoutExercise = await prisma.workoutExercise.findFirst({
+            where: {
+                id: workoutExerciseId,
+                session: {
+                    userId: res.locals.user.id,
+                },
+            },
+        })
+
+        if (!workoutExercise) {
+            return res.status(404).json({ msg: "workout exercise not found" })
+        }
+
+        // setNumber continues from the highest one already logged, so the
+        // client never has to track how many sets it has sent.
+        const lastSet = await prisma.set.findFirst({
+            where: { workoutExerciseId: workoutExercise.id },
+            orderBy: { setNumber: "desc" },
+        })
+
+        const set = await prisma.set.create({
+            data: {
+                setNumber: (lastSet?.setNumber ?? 0) + 1,
+                reps,
+                weight,
+                workoutExerciseId: workoutExercise.id,
+            },
+        })
+
+        return res.status(201).json(set)
     },
 )
 
