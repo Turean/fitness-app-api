@@ -1,7 +1,6 @@
 import express from "express"
 import { prisma } from "../lib/prisma"
 import { auth } from "../middlewares/auth"
-import { isValidSet } from "../lib/validate"
 
 export const router = express.Router()
 
@@ -26,36 +25,12 @@ router.post("/sessions/:sessionId/workoutExercises", auth, async (req, res) => {
             return res.status(404).json({ msg: "exercise not found" })
         }
 
-        // sets is optional — a workout exercise can be created empty and
-        // filled in set by set via POST /workoutExercises/:id/sets.
-        const sets = req.body?.sets ?? []
-
-        if (!Array.isArray(sets)) {
-            return res.status(400).json({ msg: "sets must be an array" })
-        }
-
-        if (!sets.every(isValidSet)) {
-            return res.status(400).json({
-                msg: "each set needs reps (1 or more) and weight (0 or more)",
-            })
-        }
-
         try {
             const workoutExercise = await prisma.workoutExercise.create({
                 data: {
                     sessionId: session.id,
                     exerciseId: exercise.id,
-                    sets: {
-                        // setNumber is always assigned by the server, in the
-                        // order the sets arrive; any client value is ignored.
-                        create: sets.map((set, i) => ({
-                            setNumber: i + 1,
-                            reps: set.reps,
-                            weight: set.weight,
-                        })),
-                    },
                 },
-                include: { sets: true },
             })
             return res.status(201).json(workoutExercise)
         } catch (e) {

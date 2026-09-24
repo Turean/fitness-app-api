@@ -8,12 +8,3 @@ export function isPositiveInt(value: unknown): value is number {
 export function isNonNegativeInt(value: unknown): value is number {
     return Number.isInteger(value) && (value as number) >= 0
 }
-
-// A set needs at least one rep, but may carry no added weight.
-export function isValidSet(set: unknown): boolean {
-    if (typeof set !== "object" || set === null) {
-        return false
-    }
-    const { reps, weight } = set as Record<string, unknown>
-    return isPositiveInt(reps) && isNonNegativeInt(weight)
-}

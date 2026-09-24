@@ -138,7 +138,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 <!-- prettier-ignore -->
 | Method | Path | Auth | Body | Notes |
 |---|---|---|---|---|
-| POST | `/sessions/:sessionId/workoutExercises` | Yes | `exerciseId, sets?: [{ reps, weight }]` | Checks the session belongs to the requester, then that `exerciseId` is a valid integer (`400`) naming an exercise in the requester's own library (`404`). `sets` is **optional** — omit it to create an empty workout exercise and fill it in one set at a time. If present it must be an array of valid sets (`400` if not). Created in one nested write; responds with the `WorkoutExercise` and its `sets`. |
+| POST | `/sessions/:sessionId/workoutExercises` | Yes | `exerciseId` | Checks the session belongs to the requester, then that `exerciseId` is a valid integer (`400`) naming an exercise in the requester's own library (`404`). Creates the `WorkoutExercise` and nothing else — sets are added afterwards through `POST /workoutExercises/:id/sets`. Responds with the new record. |
 | DELETE | `/sessions/:sessionId/workoutExercises/:weId` | Yes | — | Two-step check: session belongs to requester, **and** the workout exercise belongs to that specific session. `404` if either fails. Cascades to its `Set` records. |
 
 ### Sets
@@ -147,7 +147,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 | Method | Path | Auth | Body | Notes |
 |---|---|---|---|---|
 | GET | `/workoutExercises/:workoutExerciseId/sets` | Yes | — | Ownership checked through `workoutExercise.session.userId`. Returns the array of sets for that workout exercise. |
-| POST | `/workoutExercises/:workoutExerciseId/sets` | Yes | `reps, weight` | Logs a single set against an existing workout exercise — the normal mid-workout path. Ownership checked through `workoutExercise.session.userId` (`404`). `setNumber` is **not** accepted from the client; the server assigns it. |
+| POST | `/workoutExercises/:workoutExerciseId/sets` | Yes | `reps, weight` | The **only** way to create a set. Logs one set against an existing workout exercise. Ownership checked through `workoutExercise.session.userId` (`404`). `setNumber` is **not** accepted from the client; the server assigns it. |
 | DELETE | `/workoutExercises/:workoutExerciseId/sets/:setId` | Yes | — | Checks all three at once: the set's `id`, that its `workoutExerciseId` matches the one in the URL, and that the owning session belongs to the requester. |
 
 ---
@@ -189,7 +189,9 @@ prisma.set.findFirst({
 
 **What counts as a valid set.** `reps` must be an integer greater than 0 — a set with no reps isn't a set. `weight` must be an integer **greater than or equal to 0**, because 0 is a real value: a bodyweight pull-up or dip carries no added load. Both are checked with explicit integer tests (`lib/validate.ts`) rather than truthiness, since `if (!weight)` would reject that legitimate 0.
 
-**`setNumber` belongs to the server.** The client never sends it, on either creation path. `POST /workoutExercises/:id/sets` reads the highest `setNumber` already logged for that workout exercise and adds 1; the bulk path numbers its array `1..n` in order. A client can log set after set without tracking how many it has already sent, and two sets can't collide on a number. Deleting a set in the middle leaves a gap (`1, 3, 4`) rather than renumbering the rows around it — `setNumber` records the order a set was performed in, not its current position in the list.
+**One way to create a set.** A set is only ever created by `POST /workoutExercises/:id/sets`, one at a time. This mirrors how a workout actually happens — you pick an exercise, then record each set as you finish it — and it means there is a single place where a set is validated and numbered, rather than two paths that have to be kept in agreement.
+
+**`setNumber` belongs to the server.** The client never sends it. The route reads the highest `setNumber` already logged for that workout exercise and adds 1, so a client can log set after set without tracking how many it has already sent, and two sets can't collide on a number. Deleting a set in the middle leaves a gap (`1, 3, 4`) rather than renumbering the rows around it — `setNumber` records the order a set was performed in, not its current position in the list.
 
 **Uppercasing for uniqueness.** `Exercise.name` and `Session.sessionType` are uppercased before saving, so `"bench press"` and `"Bench Press"` don't become two different rows.
 
@@ -218,8 +220,8 @@ npm run dev    # starts on port 8800
 
 - Sessions — create, read (list + by id), delete
 - Exercises — create, read (list), delete
-- WorkoutExercises — create, delete (no read route yet; they come back nested inside `GET /sessions/:id`)
-- Sets — create (one at a time, or in bulk when the workout exercise is created), read (list), delete
+- WorkoutExercises — create (always empty), delete (no read route yet; they come back nested inside `GET /sessions/:id`)
+- Sets — create (one at a time), read (list), delete
 - No update route on any model yet
 - JWT auth + registration
 - Ownership enforcement on every protected route, including multi-level relation chains
