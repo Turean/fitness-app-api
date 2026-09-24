@@ -209,7 +209,9 @@ prisma.set.findFirst({
 
 ```bash
 npm install
+cp .env.example .env   # then set JWT_SECRET in .env
 npx prisma migrate dev
+npx prisma generate    # writes generated/prisma, not in the repo
 npm run seed   # optional, adds sample data
 npm run dev    # starts on port 8800
 ```
