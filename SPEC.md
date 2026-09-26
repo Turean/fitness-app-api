@@ -121,6 +121,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 |---|---|---|---|---|
 | GET | `/exercises` | Yes | — | Returns the logged-in user's exercises only. |
 | POST | `/exercises` | Yes | `name, muscleGroup` | Both fields required (`400` if missing). `name` is uppercased before saving. |
+| PATCH | `/exercises/:id` | Yes | `name?, muscleGroup?` | Ownership-checked. Updates only the fields sent; `name` is uppercased. `400` if neither field is sent, or if the new name is already used by another of this user's exercises (`P2002` on `@@unique([name, userId])`). Renaming works even when the exercise has workout history — only deleting is blocked. |
 | DELETE | `/exercises/:id` | Yes | — | Ownership-checked. If the exercise has already been used in a `WorkoutExercise`, deletion is blocked with `400` ("cannot delete an exercise with workout history") instead of letting the database throw a foreign-key error. |
 
 ### Sessions
@@ -131,6 +132,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 | GET | `/sessions` | Yes | — | Logged-in user's sessions, newest first. |
 | GET | `/sessions/:id` | Yes | — | One session, with nested `workoutExercises` → each one's `exercise` and `sets`. `404` if it doesn't exist or isn't the requester's. |
 | POST | `/sessions` | Yes | `sessionType, note?` | `sessionType` required (`400` if missing), uppercased before saving. |
+| PATCH | `/sessions/:id` | Yes | `sessionType?, note?` | Ownership-checked. Updates only the fields sent; `sessionType` is uppercased. `note: null` clears the note. `400` if neither field is sent. |
 | DELETE | `/sessions/:id` | Yes | — | Ownership-checked, then deleted. Cascades to its `WorkoutExercise` and `Set` records. |
 
 ### Workout Exercises
@@ -139,6 +141,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 | Method | Path | Auth | Body | Notes |
 |---|---|---|---|---|
 | POST | `/sessions/:sessionId/workoutExercises` | Yes | `exerciseId` | Checks the session belongs to the requester, then that `exerciseId` is a valid integer (`400`) naming an exercise in the requester's own library (`404`). Creates the `WorkoutExercise` and nothing else — sets are added afterwards through `POST /workoutExercises/:id/sets`. Responds with the new record. |
+| PATCH | `/sessions/:sessionId/workoutExercises/:weId` | Yes | `exerciseId` | Swaps which exercise this entry points at, keeping the sets already logged. Three checks: the session is the requester's, the workout exercise is in that session, and the new `exerciseId` is in the requester's own library. `exerciseId` is the only editable field. |
 | DELETE | `/sessions/:sessionId/workoutExercises/:weId` | Yes | — | Two-step check: session belongs to requester, **and** the workout exercise belongs to that specific session. `404` if either fails. Cascades to its `Set` records. |
 
 ### Sets
@@ -148,6 +151,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 |---|---|---|---|---|
 | GET | `/workoutExercises/:workoutExerciseId/sets` | Yes | — | Ownership checked through `workoutExercise.session.userId`. Returns the array of sets for that workout exercise. |
 | POST | `/workoutExercises/:workoutExerciseId/sets` | Yes | `reps, weight` | The **only** way to create a set. Logs one set against an existing workout exercise. Ownership checked through `workoutExercise.session.userId` (`404`). `setNumber` is **not** accepted from the client; the server assigns it. |
+| PATCH | `/workoutExercises/:workoutExerciseId/sets/:setId` | Yes | `reps?, weight?` | Fixes a mistyped set. Same three-part ownership check as the delete below. Updates only the fields sent; `400` if neither is. `setNumber` is not editable. |
 | DELETE | `/workoutExercises/:workoutExerciseId/sets/:setId` | Yes | — | Checks all three at once: the set's `id`, that its `workoutExerciseId` matches the one in the URL, and that the owning session belongs to the requester. |
 
 ---
@@ -193,6 +197,10 @@ prisma.set.findFirst({
 
 **`setNumber` belongs to the server.** The client never sends it. The route reads the highest `setNumber` already logged for that workout exercise and adds 1, so a client can log set after set without tracking how many it has already sent, and two sets can't collide on a number. Deleting a set in the middle leaves a gap (`1, 3, 4`) rather than renumbering the rows around it — `setNumber` records the order a set was performed in, not its current position in the list.
 
+**Updates are partial.** Every `PATCH` builds its `data` object from the fields actually present in the body, so a client can change a note without resending the session type it isn't touching. A field is considered sent when it is not `undefined` — which lets `note: null` mean "clear this" rather than "leave it alone", since `note` is the one nullable column. If no editable field is sent at all, the route returns `400 "nothing to update"` rather than issuing a write that changes nothing.
+
+**Ids are parsed before they reach Prisma.** Every route that takes an `:id` runs it through `parseId` in `lib/validate.ts`, which returns `null` for anything that isn't a positive integer; the route then answers `404`. This is not cosmetic: `Number("abc")` is `NaN`, and Prisma throws a validation error on `NaN` rather than matching no rows, which surfaces as an unhandled rejection and Express's default HTML error page — complete with absolute file paths and source lines. Routes with two ids in the path parse both, since a valid first id doesn't make the second one safe. `404` rather than `400` keeps the answer identical to "this row exists but isn't yours", so the API never reveals which ids are real.
+
 **Uppercasing for uniqueness.** `Exercise.name` and `Session.sessionType` are uppercased before saving, so `"bench press"` and `"Bench Press"` don't become two different rows.
 
 **Validate before transforming.** A field's presence is checked before calling a method on it (e.g. `.toUpperCase()`), so a missing field returns a clean `400` instead of crashing the request.
@@ -220,17 +228,20 @@ npm run dev    # starts on port 8800
 
 ## Built So Far
 
-- Sessions — create, read (list + by id), delete
-- Exercises — create, read (list), delete
-- WorkoutExercises — create (always empty), delete (no read route yet; they come back nested inside `GET /sessions/:id`)
-- Sets — create (one at a time), read (list), delete
-- No update route on any model yet
+- Sessions — create, read (list + by id), update, delete
+- Exercises — create, read (list), update, delete
+- WorkoutExercises — create (always empty), update (swap the exercise), delete (no read route yet; they come back nested inside `GET /sessions/:id`)
+- Sets — create (one at a time), update, delete, read (list)
+- No update route for `User` yet
 - JWT auth + registration
 - Ownership enforcement on every protected route, including multi-level relation chains
 
 ## Not Yet Built
 
-- Update routes for any model
+- Account editing — changing a user's own name, email, username or password
+- A global error handler, so an unexpected throw returns JSON rather than
+  Express's default HTML error page
+- A `GET` route for a single workout exercise
 - Streak / attendance tracking
 - Password reset flow (the `email` field exists in the schema for this)
 - Frontend (Next.js, planned)

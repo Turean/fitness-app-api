@@ -1,7 +1,7 @@
 import express from "express"
 import { prisma } from "../lib/prisma"
 import { auth } from "../middlewares/auth"
-import { isNonNegativeInt, isPositiveInt } from "../lib/validate"
+import { isNonNegativeInt, isPositiveInt, parseId } from "../lib/validate"
 
 export const router = express.Router()
 
@@ -9,11 +9,15 @@ router.get(
     "/workoutExercises/:workoutExerciseId/sets",
     auth,
     async (req, res) => {
-        const workoutExerciseId = req.params?.workoutExerciseId
+        const workoutExerciseId = parseId(req.params?.workoutExerciseId)
+
+        if (workoutExerciseId === null) {
+            return res.status(404).json({ msg: "workout exercise not found" })
+        }
 
         const workoutExercise = await prisma.workoutExercise.findFirst({
             where: {
-                id: Number(workoutExerciseId),
+                id: workoutExerciseId,
                 session: {
                     userId: res.locals.user.id,
                 },
@@ -35,7 +39,12 @@ router.post(
     "/workoutExercises/:workoutExerciseId/sets",
     auth,
     async (req, res) => {
-        const workoutExerciseId = Number(req.params?.workoutExerciseId)
+        const workoutExerciseId = parseId(req.params?.workoutExerciseId)
+
+        if (workoutExerciseId === null) {
+            return res.status(404).json({ msg: "workout exercise not found" })
+        }
+
         const reps = req.body?.reps
         const weight = req.body?.weight
 
@@ -78,17 +87,87 @@ router.post(
     },
 )
 
+router.patch(
+    "/workoutExercises/:workoutExerciseId/sets/:setId",
+    auth,
+    async (req, res) => {
+        const workoutExerciseId = parseId(req.params?.workoutExerciseId)
+        const setId = parseId(req.params?.setId)
+
+        if (workoutExerciseId === null || setId === null) {
+            return res.status(404).json({ msg: "set not found" })
+        }
+
+        const reps = req.body?.reps
+        const weight = req.body?.weight
+
+        // setNumber is not editable — it records the order the set was
+        // performed in, and the server owns it on every other route too.
+        const data: { reps?: number; weight?: number } = {}
+
+        if (reps !== undefined) {
+            if (!isPositiveInt(reps)) {
+                return res.status(400).json({ msg: "reps must be 1 or more" })
+            }
+            data.reps = reps
+        }
+
+        if (weight !== undefined) {
+            if (!isNonNegativeInt(weight)) {
+                return res
+                    .status(400)
+                    .json({ msg: "weight must be 0 or more" })
+            }
+            data.weight = weight
+        }
+
+        if (Object.keys(data).length === 0) {
+            return res.status(400).json({ msg: "nothing to update" })
+        }
+
+        const set = await prisma.set.findFirst({
+            where: {
+                id: setId,
+                workoutExerciseId,
+                workoutExercise: {
+                    session: {
+                        userId: res.locals.user.id,
+                    },
+                },
+            },
+        })
+
+        if (!set) {
+            return res.status(404).json({ msg: "set not found" })
+        }
+
+        try {
+            const updated = await prisma.set.update({
+                where: { id: set.id },
+                data,
+            })
+            return res.json(updated)
+        } catch (e) {
+            return res.status(400).json({ msg: "failed to update the set" })
+        }
+    },
+)
+
 router.delete(
     "/workoutExercises/:workoutExerciseId/sets/:setId",
     auth,
     async (req, res) => {
-        const setId = req.params?.setId
-        const workoutExerciseId = req.params?.workoutExerciseId
+        const setId = parseId(req.params?.setId)
+        const workoutExerciseId = parseId(req.params?.workoutExerciseId)
+
+        if (setId === null || workoutExerciseId === null) {
+            return res.status(404).json({ msg: "set not found" })
+        }
 
         const set = await prisma.set.findFirst({
             where: {
-                id: Number(setId),
-                workoutExerciseId: Number(workoutExerciseId),
+                id: setId,
+                workoutExerciseId,
                 workoutExercise: {
                     session: {
                         userId: res.locals.user.id,
