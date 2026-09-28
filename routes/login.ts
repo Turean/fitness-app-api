@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma"
 import jwt from "jsonwebtoken"
 
 import { auth } from "../middlewares/auth"
+import { isNonEmptyString } from "../lib/validate"
 
 export const router = express.Router()
 router.get("/verify", auth, async (req, res) => {
@@ -20,7 +21,10 @@ router.post("/login", async (req, res) => {
     const username = req.body?.username
     const password = req.body?.password
 
-    if (!username || !password) {
+    // This route is unauthenticated, so anything that reaches Prisma or
+    // bcrypt from here is reachable by anyone. A non-string username threw
+    // inside findUnique before this check existed.
+    if (!isNonEmptyString(username) || !isNonEmptyString(password)) {
         return res.status(400).json({ msg: "username and password required" })
     }
 

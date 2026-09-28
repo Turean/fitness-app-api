@@ -31,19 +31,13 @@ router.post("/sessions/:sessionId/workoutExercises", auth, async (req, res) => {
             return res.status(404).json({ msg: "exercise not found" })
         }
 
-        try {
-            const workoutExercise = await prisma.workoutExercise.create({
-                data: {
-                    sessionId: session.id,
-                    exerciseId: exercise.id,
-                },
-            })
-            return res.status(201).json(workoutExercise)
-        } catch (e) {
-            return res
-                .status(400)
-                .json({ msg: "failed to create workout exercise" })
-        }
+        const workoutExercise = await prisma.workoutExercise.create({
+            data: {
+                sessionId: session.id,
+                exerciseId: exercise.id,
+            },
+        })
+        return res.status(201).json(workoutExercise)
     }
     res.status(404).json({ msg: "session not found" })
 })
@@ -92,17 +86,11 @@ router.patch(
             return res.status(404).json({ msg: "exercise not found" })
         }
 
-        try {
-            const updated = await prisma.workoutExercise.update({
-                where: { id: workoutExercise.id },
-                data: { exerciseId: exercise.id },
-            })
-            return res.json(updated)
-        } catch (e) {
-            return res
-                .status(400)
-                .json({ msg: "failed to update workout exercise" })
-        }
+        const updated = await prisma.workoutExercise.update({
+            where: { id: workoutExercise.id },
+            data: { exerciseId: exercise.id },
+        })
+        return res.json(updated)
     },
 )
 
@@ -134,15 +122,9 @@ router.delete(
             return res.status(404).json({ msg: "workout exercise not found" })
         }
 
-        try {
-            const deleteWorkoutExercise = await prisma.workoutExercise.delete({
-                where: { id: workoutExercise.id },
-            })
-            return res.status(200).json(deleteWorkoutExercise)
-        } catch (e) {
-            return res
-                .status(400)
-                .json({ msg: "failed to delete workout exercise" })
-        }
+        const deleteWorkoutExercise = await prisma.workoutExercise.delete({
+            where: { id: workoutExercise.id },
+        })
+        return res.status(200).json(deleteWorkoutExercise)
     },
 )

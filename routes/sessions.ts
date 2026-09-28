@@ -42,9 +42,16 @@ router.post("/sessions", auth, async (req, res) => {
     const note = req.body?.note
     const userId = res.locals.user.id
 
-    if (!sessionType) {
+    if (!isNonEmptyString(sessionType)) {
         return res.status(400).json({ msg: "Session type is required" })
     }
+
+    // note goes straight to a String? column, so a non-string here would
+    // fail inside Prisma and surface as a 500 rather than a 400.
+    if (note !== undefined && note !== null && !isNonEmptyString(note)) {
+        return res.status(400).json({ msg: "note must be text" })
+    }
+
     const session = await prisma.session.create({
         data: {
             sessionType: sessionType.toUpperCase(),
@@ -96,15 +103,11 @@ router.patch("/sessions/:id", auth, async (req, res) => {
         return res.status(404).json({ msg: "session not found" })
     }
 
-    try {
-        const updated = await prisma.session.update({
-            where: { id: session.id },
-            data,
-        })
-        return res.json(updated)
-    } catch (e) {
-        return res.status(400).json({ msg: "failed to update the session" })
-    }
+    const updated = await prisma.session.update({
+        where: { id: session.id },
+        data,
+    })
+    return res.json(updated)
 })
 
 router.delete("/sessions/:id", auth, async (req, res) => {
@@ -120,14 +123,10 @@ router.delete("/sessions/:id", auth, async (req, res) => {
     })
 
     if (session) {
-        try {
-            const deleteSession = await prisma.session.delete({
-                where: { id: session.id },
-            })
-            return res.status(200).json(deleteSession)
-        } catch (e) {
-            return res.status(400).json({ msg: "failed to delete the session" })
-        }
+        const deleteSession = await prisma.session.delete({
+            where: { id: session.id },
+        })
+        return res.status(200).json(deleteSession)
     }
     res.status(404).json({ msg: "session not found" })
 })

@@ -20,7 +20,7 @@ router.post("/exercises", auth, async (req, res) => {
     const muscleGroup = req.body?.muscleGroup
     const userId = res.locals.user.id
 
-    if (!name || !muscleGroup) {
+    if (!isNonEmptyString(name) || !isNonEmptyString(muscleGroup)) {
         return res.status(400).json({ msg: "name and muscle group required" })
     }
 
@@ -89,7 +89,7 @@ router.patch("/exercises/:id", auth, async (req, res) => {
                 .status(400)
                 .json({ msg: "you already have an exercise with that name" })
         }
-        return res.status(400).json({ msg: "failed to update the exercise" })
+        throw e
     }
 })
 
@@ -110,21 +110,16 @@ router.delete("/exercises/:id", auth, async (req, res) => {
             where: { exerciseId: exercise.id },
         })
 
-        try {
-            if (!workoutExercise) {
-                const deleteExercise = await prisma.exercise.delete({
-                    where: { id: exercise.id },
-                })
-                return res.status(200).json(deleteExercise)
-            }
+        if (workoutExercise) {
             return res.status(400).json({
                 msg: "cannot delete an exercise with workout history",
             })
-        } catch (e) {
-            return res
-                .status(400)
-                .json({ msg: "failed to delete the exercise" })
         }
+
+        const deleteExercise = await prisma.exercise.delete({
+            where: { id: exercise.id },
+        })
+        return res.status(200).json(deleteExercise)
     }
     res.status(404).json({ msg: "exercise not found" })
 })

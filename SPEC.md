@@ -199,6 +199,12 @@ prisma.set.findFirst({
 
 **Updates are partial.** Every `PATCH` builds its `data` object from the fields actually present in the body, so a client can change a note without resending the session type it isn't touching. A field is considered sent when it is not `undefined` — which lets `note: null` mean "clear this" rather than "leave it alone", since `note` is the one nullable column. If no editable field is sent at all, the route returns `400 "nothing to update"` rather than issuing a write that changes nothing.
 
+**One error handler, at the end of `index.ts`.** Express recognises an error handler by its arity — four parameters (`err, req, res, next`) rather than three. Express 5 forwards a rejected promise from an `async` route handler to it automatically, which is why routes can let a failed query bubble instead of wrapping every call in `try/catch`. It logs the error server-side, maps `express.json()`'s `SyntaxError` to `400 "invalid JSON body"` (that one throws before any route runs, so no route-level `catch` could ever see it), and answers everything else with `500 "something went wrong"`. Without it, Express falls back to its built-in handler, which renders **HTML** — including a stack trace with absolute file paths outside production. A `404` catch-all sits just before it so an unmatched URL also returns JSON.
+
+**`try/catch` only where it maps a known error to a known status.** The two that remain — `P2002` on `POST /users` and `PATCH /exercises/:id` — translate a specific constraint violation into a specific `400`, then `throw e` so anything else reaches the global handler. A `catch` that turns every failure into a generic `400` is worse than none: it reports a server fault as a client one and hides the cause.
+
+**Body fields are type-checked, not truth-checked.** `if (!name)` passes for `123`, which then fails inside Prisma or bcrypt and surfaces as a `500` for what is really a bad request. Every string field is checked with `isNonEmptyString`, so a wrong type is a `400` — and whitespace-only input, which a truthy check also lets through, is rejected with it.
+
 **Ids are parsed before they reach Prisma.** Every route that takes an `:id` runs it through `parseId` in `lib/validate.ts`, which returns `null` for anything that isn't a positive integer; the route then answers `404`. This is not cosmetic: `Number("abc")` is `NaN`, and Prisma throws a validation error on `NaN` rather than matching no rows, which surfaces as an unhandled rejection and Express's default HTML error page — complete with absolute file paths and source lines. Routes with two ids in the path parse both, since a valid first id doesn't make the second one safe. `404` rather than `400` keeps the answer identical to "this row exists but isn't yours", so the API never reveals which ids are real.
 
 **Uppercasing for uniqueness.** `Exercise.name` and `Session.sessionType` are uppercased before saving, so `"bench press"` and `"Bench Press"` don't become two different rows.
@@ -239,8 +245,6 @@ npm run dev    # starts on port 8800
 ## Not Yet Built
 
 - Account editing — changing a user's own name, email, username or password
-- A global error handler, so an unexpected throw returns JSON rather than
-  Express's default HTML error page
 - A `GET` route for a single workout exercise
 - Streak / attendance tracking
 - Password reset flow (the `email` field exists in the schema for this)

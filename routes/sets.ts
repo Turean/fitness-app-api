@@ -141,15 +141,11 @@ router.patch(
             return res.status(404).json({ msg: "set not found" })
         }
 
-        try {
-            const updated = await prisma.set.update({
-                where: { id: set.id },
-                data,
-            })
-            return res.json(updated)
-        } catch (e) {
-            return res.status(400).json({ msg: "failed to update the set" })
-        }
+        const updated = await prisma.set.update({
+            where: { id: set.id },
+            data,
+        })
+        return res.json(updated)
     },
 )
 
@@ -180,13 +176,9 @@ router.delete(
             return res.status(404).json({ msg: "Set not found" })
         }
 
-        try {
-            const deleteSet = await prisma.set.delete({
-                where: { id: set.id },
-            })
-            return res.status(200).json(deleteSet)
-        } catch (e) {
-            return res.status(400).json({ msg: "failed to delete the set" })
-        }
+        const deleteSet = await prisma.set.delete({
+            where: { id: set.id },
+        })
+        return res.status(200).json(deleteSet)
     },
 )
