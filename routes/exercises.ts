@@ -78,9 +78,6 @@ router.patch("/exercises/:id", auth, async (req, res) => {
         })
         return res.json(updated)
     } catch (e) {
-        // @@unique([name, userId]) — renaming onto a name already in this
-        // user's library. Renaming is allowed even once the exercise has
-        // workout history; only deleting it is blocked.
         if (
             e instanceof Prisma.PrismaClientKnownRequestError &&
             e.code === "P2002"

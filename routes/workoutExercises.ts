@@ -54,8 +54,6 @@ router.patch(
             return res.status(404).json({ msg: "workout exercise not found" })
         }
 
-        // exerciseId is the only editable field: swapping the exercise
-        // keeps the sets already logged, where deleting would lose them.
         const exerciseId = parseId(req.body?.exerciseId)
 
         if (exerciseId === null) {

@@ -67,8 +67,6 @@ router.post(
             return res.status(404).json({ msg: "workout exercise not found" })
         }
 
-        // setNumber continues from the highest one already logged, so the
-        // client never has to track how many sets it has sent.
         const lastSet = await prisma.set.findFirst({
             where: { workoutExerciseId: workoutExercise.id },
             orderBy: { setNumber: "desc" },
@@ -114,9 +112,7 @@ router.patch(
 
         if (weight !== undefined) {
             if (!isNonNegativeInt(weight)) {
-                return res
-                    .status(400)
-                    .json({ msg: "weight must be 0 or more" })
+                return res.status(400).json({ msg: "weight must be 0 or more" })
             }
             data.weight = weight
         }

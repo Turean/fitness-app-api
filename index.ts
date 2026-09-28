@@ -27,21 +27,13 @@ app.get("/", (req, res) => {
     res.json({ status: "Fitness app API running..." })
 })
 
-// Nothing matched. Must come after every router, and before the error
-// handler below.
 app.use((req, res) => {
     res.status(404).json({ msg: "not found" })
 })
 
-// Four parameters is what marks this as an error handler — Express checks
-// the function's arity, not its name. Express 5 forwards rejected promises
-// from async route handlers here on its own, which is why the routes can
-// let a failed query bubble instead of catching it.
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
     console.error(err)
 
-    // express.json() throws this before any route runs, so no route-level
-    // try/catch could ever see it. A malformed body is the client's fault.
     if (err instanceof SyntaxError && "body" in err) {
         return res.status(400).json({ msg: "invalid JSON body" })
     }

@@ -46,8 +46,6 @@ router.post("/sessions", auth, async (req, res) => {
         return res.status(400).json({ msg: "Session type is required" })
     }
 
-    // note goes straight to a String? column, so a non-string here would
-    // fail inside Prisma and surface as a 500 rather than a 400.
     if (note !== undefined && note !== null && !isNonEmptyString(note)) {
         return res.status(400).json({ msg: "note must be text" })
     }
