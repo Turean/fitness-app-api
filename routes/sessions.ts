@@ -46,8 +46,10 @@ router.post("/sessions", auth, async (req, res) => {
         return res.status(400).json({ msg: "Session type is required" })
     }
 
-    if (note !== undefined && note !== null && !isNonEmptyString(note)) {
-        return res.status(400).json({ msg: "note must be text" })
+    if (note !== undefined && note !== null) {
+        if (!isNonEmptyString(note)) {
+            return res.status(400).json({ msg: "note must be text" })
+        }
     }
 
     const session = await prisma.session.create({
@@ -71,8 +73,6 @@ router.patch("/sessions/:id", auth, async (req, res) => {
     const sessionType = req.body?.sessionType
     const note = req.body?.note
 
-    // Only the fields actually sent are changed, so a client can edit a
-    // note without having to resend the session type it isn't touching.
     const data: { sessionType?: string; note?: string | null } = {}
 
     if (sessionType !== undefined) {
@@ -82,8 +82,6 @@ router.patch("/sessions/:id", auth, async (req, res) => {
         data.sessionType = sessionType.toUpperCase()
     }
 
-    // note is optional in the schema, so null is a real value — it is
-    // how a client clears a note it previously saved.
     if (note !== undefined) {
         if (note !== null && !isNonEmptyString(note)) {
             return res.status(400).json({ msg: "note must be text or null" })
