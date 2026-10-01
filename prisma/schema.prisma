@@ -57,7 +57,7 @@ model Set {
   id                Int             @id @default(autoincrement())
   setNumber         Int
   reps              Int
-  weight            Int
+  weight            Float
   workoutExerciseId Int
   workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
 }

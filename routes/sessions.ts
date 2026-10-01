@@ -26,7 +26,7 @@ router.get("/sessions/:id", auth, async (req, res) => {
         where: { id, userId },
         include: {
             workoutExercises: {
-                include: { exercise: true, sets: true },
+                include: { exercise: true },
             },
         },
     })

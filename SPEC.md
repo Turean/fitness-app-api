@@ -68,7 +68,7 @@ One set within a `WorkoutExercise`.
 | id | Int | primary key |
 | setNumber | Int | |
 | reps | Int | |
-| weight | Int | |
+| weight | Float | may be fractional — 7.5, 22.5 |
 | workoutExerciseId | Int | foreign key → WorkoutExercise, **cascades on delete** |
 
 ---
@@ -130,7 +130,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 | Method | Path | Auth | Body | Notes |
 |---|---|---|---|---|
 | GET | `/sessions` | Yes | — | Logged-in user's sessions, newest first. |
-| GET | `/sessions/:id` | Yes | — | One session, with nested `workoutExercises` → each one's `exercise` and `sets`. `404` if it doesn't exist or isn't the requester's. |
+| GET | `/sessions/:id` | Yes | — | One session with its `workoutExercises`, each carrying its `exercise` — but **not** its sets, so the response stays a summary of what was done. Fetch the sets for one of them from `GET /workoutExercises/:id/sets`. `404` if it doesn't exist or isn't the requester's. |
 | POST | `/sessions` | Yes | `sessionType, note?` | `sessionType` required (`400` if missing), uppercased before saving. |
 | PATCH | `/sessions/:id` | Yes | `sessionType?, note?` | Ownership-checked. Updates only the fields sent; `sessionType` is uppercased. `note: null` clears the note. `400` if neither field is sent. |
 | DELETE | `/sessions/:id` | Yes | — | Ownership-checked, then deleted. Cascades to its `WorkoutExercise` and `Set` records. |
@@ -191,7 +191,7 @@ prisma.set.findFirst({
 
 **`userId` always comes from the JWT**, never from the request body — this is what stops a user from creating or touching data under someone else's account.
 
-**What counts as a valid set.** `reps` must be an integer greater than 0 — a set with no reps isn't a set. `weight` must be an integer **greater than or equal to 0**, because 0 is a real value: a bodyweight pull-up or dip carries no added load. Both are checked with explicit integer tests (`lib/validate.ts`) rather than truthiness, since `if (!weight)` would reject that legitimate 0.
+**What counts as a valid set.** `reps` must be an integer greater than 0 — a set with no reps isn't a set. `weight` is a `Float` and only has to be a finite number **greater than or equal to 0**. Both ends of that matter: 0 is a real value, since a bodyweight pull-up carries no added load, and fractions are real too — 2.5 kg plates and 1.25 kg microplates make 7.5 and 22.5 ordinary working weights. `reps` stays an integer; half a repetition isn't a thing. Neither is truth-checked, since `if (!weight)` would reject that legitimate 0.
 
 **One way to create a set.** A set is only ever created by `POST /workoutExercises/:id/sets`, one at a time. This mirrors how a workout actually happens — you pick an exercise, then record each set as you finish it — and it means there is a single place where a set is validated and numbered, rather than two paths that have to be kept in agreement.
 
@@ -237,7 +237,8 @@ npm run dev    # starts on port 8800
 - Sessions — create, read (list + by id), update, delete
 - Exercises — create, read (list), update, delete
 - WorkoutExercises — create (always empty), update (swap the exercise), delete (no read route yet; they come back nested inside `GET /sessions/:id`)
-- Sets — create (one at a time), update, delete, read (list)
+- Sets — create (one at a time), update, delete, read (list). `weight`
+  stores fractions; `reps` stays whole
 - No update route for `User` yet
 - JWT auth + registration
 - Ownership enforcement on every protected route, including multi-level relation chains
@@ -245,7 +246,6 @@ npm run dev    # starts on port 8800
 ## Not Yet Built
 
 - Account editing — changing a user's own name, email, username or password
-- A `GET` route for a single workout exercise
 - Streak / attendance tracking
 - Password reset flow (the `email` field exists in the schema for this)
 - Frontend (Next.js, planned)

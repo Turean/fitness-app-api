@@ -1,7 +1,7 @@
 import express from "express"
 import { prisma } from "../lib/prisma"
 import { auth } from "../middlewares/auth"
-import { isNonNegativeInt, isPositiveInt, parseId } from "../lib/validate"
+import { isNonNegativeNumber, isPositiveInt, parseId } from "../lib/validate"
 
 export const router = express.Router()
 
@@ -48,7 +48,7 @@ router.post(
         const reps = req.body?.reps
         const weight = req.body?.weight
 
-        if (!isPositiveInt(reps) || !isNonNegativeInt(weight)) {
+        if (!isPositiveInt(reps) || !isNonNegativeNumber(weight)) {
             return res.status(400).json({
                 msg: "reps (1 or more) and weight (0 or more) required",
             })
@@ -111,7 +111,7 @@ router.patch(
         }
 
         if (weight !== undefined) {
-            if (!isNonNegativeInt(weight)) {
+            if (!isNonNegativeNumber(weight)) {
                 return res.status(400).json({ msg: "weight must be 0 or more" })
             }
             data.weight = weight
