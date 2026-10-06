@@ -10,6 +10,7 @@ router.get("/sessions", auth, async (req, res) => {
     const sessions = await prisma.session.findMany({
         where: { userId },
         orderBy: { id: "desc" },
+        include: { _count: { select: { workoutExercises: true } } },
     })
     res.json(sessions)
 })

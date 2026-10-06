@@ -11,12 +11,14 @@ export function auth(
 
     if (token) {
         try {
-            const data = jwt.verify(token, process.env.JWT_SECRET as string)
+            const data = jwt.verify(token, process.env.JWT_SECRET as string, {
+                maxAge: "30d",
+            })
             res.locals.user = data
             return next()
         } catch (e) {
-            return res.status(403).json({ msg: "invalid token" })
+            return res.status(401).json({ msg: "invalid token" })
         }
     }
-    res.status(403).json({ msg: "missing token" })
+    res.status(401).json({ msg: "missing token" })
 }

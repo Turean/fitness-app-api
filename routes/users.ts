@@ -3,6 +3,7 @@ import bcrypt from "bcrypt"
 import { prisma } from "../lib/prisma"
 import { Prisma } from "../generated/prisma/client"
 import { isNonEmptyString } from "../lib/validate"
+import { signToken } from "../lib/token"
 
 export const router = express.Router()
 
@@ -32,7 +33,7 @@ router.post("/users", async (req, res) => {
         })
 
         const { password: _password, ...safeUser } = user
-        return res.status(201).json(safeUser)
+        return res.status(201).json({ safeUser, token: signToken(user.id) })
     } catch (e) {
         if (
             e instanceof Prisma.PrismaClientKnownRequestError &&

@@ -1,12 +1,14 @@
 import express from "express"
 import bcrypt from "bcrypt"
 import { prisma } from "../lib/prisma"
-import jwt from "jsonwebtoken"
+import { signToken } from "../lib/token"
 
 import { auth } from "../middlewares/auth"
 import { isNonEmptyString } from "../lib/validate"
 
 export const router = express.Router()
+
+const DUMMY_HASH = bcrypt.hashSync("dummy-password", 10)
 router.get("/verify", auth, async (req, res) => {
     const id = res.locals.user.id
     const user = await prisma.user.findUnique({
@@ -29,17 +31,13 @@ router.post("/login", async (req, res) => {
         where: { username },
     })
 
-    if (user) {
-        if (await bcrypt.compare(password, user.password)) {
-            const token = jwt.sign(
-                { id: user.id },
-                process.env.JWT_SECRET as string,
-            )
+    // Always run bcrypt, so an unknown username takes as long as a wrong password.
+    const valid = await bcrypt.compare(password, user?.password ?? DUMMY_HASH)
 
-            const { password: _password, ...safeUser } = user
-            return res.json({ safeUser, token })
-        }
-        return res.status(401).json({ msg: "invalid password" })
+    if (!user || !valid) {
+        return res.status(401).json({ msg: "invalid username or password" })
     }
-    return res.status(401).json({ msg: "invalid username" })
+
+    const { password: _password, ...safeUser } = user
+    return res.json({ safeUser, token: signToken(user.id) })
 })
