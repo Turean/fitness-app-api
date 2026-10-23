@@ -106,7 +106,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 <!-- prettier-ignore -->
 | Method | Path | Auth | Body | Notes |
 |---|---|---|---|---|
-| POST | `/users` | No | `name, username, email, password` | Registers a user and signs them in. Password hashed with bcrypt before saving. `201 { safeUser, token }` — the same shape as `/login`. `400` if a field is missing, or if the username or email is already taken (both currently report "username already taken"). |
+| POST | `/users` | No | `name, username, email, password` | Registers a user and signs them in. Password hashed with bcrypt before saving. `201 { safeUser, token }` — the same shape as `/login`. `400` if a field is missing, `400 "username already taken"` or `400 "email already in use"` for whichever unique column collided. The field is read from the database's own constraint error, so there's no separate lookup that could race with the insert. |
 
 ### Login
 

@@ -39,8 +39,26 @@ router.post("/users", async (req, res) => {
             e instanceof Prisma.PrismaClientKnownRequestError &&
             e.code === "P2002"
         ) {
-            return res.status(400).json({ msg: "username already taken" })
+            const fields = uniqueFields(e)
+
+            if (fields.includes("username")) {
+                return res.status(400).json({ msg: "username already taken" })
+            }
+            if (fields.includes("email")) {
+                return res.status(400).json({ msg: "email already in use" })
+            }
+            return res
+                .status(400)
+                .json({ msg: "username or email already taken" })
         }
         throw e
     }
 })
+
+function uniqueFields(e: Prisma.PrismaClientKnownRequestError): string[] {
+    const adapterError = e.meta?.driverAdapterError as
+        | { cause?: { constraint?: { fields?: string[] } } }
+        | undefined
+
+    return adapterError?.cause?.constraint?.fields ?? []
+}
