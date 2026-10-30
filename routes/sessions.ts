@@ -1,15 +1,25 @@
 import express from "express"
 import { prisma } from "../lib/prisma"
 import { auth } from "../middlewares/auth"
-import { isNonEmptyString, parseId } from "../lib/validate"
+import { isNonEmptyString, isPositiveInt, parseId } from "../lib/validate"
 
 export const router = express.Router()
 
 router.get("/sessions", auth, async (req, res) => {
     const userId = res.locals.user.id
+    const limit =
+        req.query.limit === undefined ? undefined : Number(req.query.limit)
+
+    if (limit !== undefined && !isPositiveInt(limit)) {
+        return res
+            .status(400)
+            .json({ msg: "limit must be a whole number of 1 or more" })
+    }
+
     const sessions = await prisma.session.findMany({
         where: { userId },
         orderBy: { id: "desc" },
+        take: limit,
         include: { _count: { select: { workoutExercises: true } } },
     })
     res.json(sessions)

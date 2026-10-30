@@ -131,7 +131,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 <!-- prettier-ignore -->
 | Method | Path | Auth | Body | Notes |
 |---|---|---|---|---|
-| GET | `/sessions` | Yes | — | Logged-in user's sessions, newest first. Each carries `_count.workoutExercises`, so a list can show how many exercises a session has without a request per session. |
+| GET | `/sessions` | Yes | — | Logged-in user's sessions, newest first. Each carries `_count.workoutExercises`, so a list can show how many exercises a session has without a request per session. Optional `?limit=N` returns only the newest `N` — so a page showing five recent sessions doesn't download the whole history. `N` must be a whole number of 1 or more (`400` otherwise, including `0`, decimals, text, an empty value, or `limit` given twice). Without it, every session is returned. |
 | GET | `/sessions/:id` | Yes | — | One session with its `workoutExercises`, each carrying its `exercise` — but **not** its sets, so the response stays a summary of what was done. Fetch the sets for one of them from `GET /workoutExercises/:id/sets`. `404` if it doesn't exist or isn't the requester's. |
 | POST | `/sessions` | Yes | `sessionType, note?` | `sessionType` required (`400` if missing), uppercased before saving. |
 | PATCH | `/sessions/:id` | Yes | `sessionType?, note?` | Ownership-checked. Updates only the fields sent; `sessionType` is uppercased. `note: null` clears the note. `400` if neither field is sent. |
