@@ -37,7 +37,11 @@ router.get("/sessions/:id", auth, async (req, res) => {
         where: { id, userId },
         include: {
             workoutExercises: {
-                include: { exercise: true },
+                orderBy: { id: "asc" },
+                include: {
+                    exercise: true,
+                    sets: { orderBy: { setNumber: "asc" } },
+                },
             },
         },
     })
