@@ -24,15 +24,26 @@ router.post("/exercises", auth, async (req, res) => {
         return res.status(400).json({ msg: "name and muscle group required" })
     }
 
-    const exercise = await prisma.exercise.create({
-        data: {
-            name: name.toUpperCase(),
-            muscleGroup,
-            userId,
-        },
-    })
-
-    res.status(201).json(exercise)
+    try {
+        const exercise = await prisma.exercise.create({
+            data: {
+                name: name.toUpperCase(),
+                muscleGroup,
+                userId,
+            },
+        })
+        return res.status(201).json(exercise)
+    } catch (e) {
+        if (
+            e instanceof Prisma.PrismaClientKnownRequestError &&
+            e.code === "P2002"
+        ) {
+            return res
+                .status(400)
+                .json({ msg: "you already have an exercise with that name" })
+        }
+        throw e
+    }
 })
 
 router.patch("/exercises/:id", auth, async (req, res) => {

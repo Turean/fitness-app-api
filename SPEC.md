@@ -122,7 +122,7 @@ The `auth` middleware verifies the token and attaches the payload to `res.locals
 | Method | Path | Auth | Body | Notes |
 |---|---|---|---|---|
 | GET | `/exercises` | Yes | — | Returns the logged-in user's exercises only. |
-| POST | `/exercises` | Yes | `name, muscleGroup` | Both fields required (`400` if missing). `name` is uppercased before saving. |
+| POST | `/exercises` | Yes | `name, muscleGroup` | Both fields required (`400` if missing). `name` is uppercased before saving. `400 "you already have an exercise with that name"` if this user already has one by that name (`P2002` on `@@unique([name, userId])`) — the same answer the rename route gives. |
 | PATCH | `/exercises/:id` | Yes | `name?, muscleGroup?` | Ownership-checked. Updates only the fields sent; `name` is uppercased. `400` if neither field is sent, or if the new name is already used by another of this user's exercises (`P2002` on `@@unique([name, userId])`). Renaming works even when the exercise has workout history — only deleting is blocked. |
 | DELETE | `/exercises/:id` | Yes | — | Ownership-checked. If the exercise has already been used in a `WorkoutExercise`, deletion is blocked with `400` ("cannot delete an exercise with workout history") instead of letting the database throw a foreign-key error. |
 
